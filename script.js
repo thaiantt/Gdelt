@@ -10,6 +10,25 @@ let colors = {
 
 console.log(regionCode);
 
+let modeBrush = false;
+let modeBtn = document.getElementById("mode");
+modeBtn.addEventListener("click", function() {
+    modeBrush = !modeBrush;
+    svg.selectAll("circle").remove();
+    svg.selectAll(".selected").classed("selected", false);
+    svg.selectAll(".activeReg").classed("activeReg", false);
+
+    if (modeBrush) {
+        modeBtn.innerHTML = "Switch to click";
+        svg.append("g")
+            .attr("class", "brush")
+            .call(brush)
+    } else {
+        modeBtn.innerHTML = "Switch to brush";
+        svg.select(".brush").remove();
+    }
+
+});
 
 // MONTH SELECTION
 let monthSelect = document.getElementById("monthSelect");
@@ -23,9 +42,9 @@ console.log(month);
 
 // CALENDARS
 let calendarStart = document.getElementById("start");
-let startDate = calendarStart.value.replace(/-/g,"");
-calendarStart.addEventListener("change", function(){
-    let startVal = this.value.replace(/-/g,"");
+let startDate = calendarStart.value.replace(/-/g, "");
+calendarStart.addEventListener("change", function () {
+    let startVal = this.value.replace(/-/g, "");
     startDate = startVal;
     console.log("Change start calendar");
     console.log(startVal); //YYY-MM-DD
@@ -35,9 +54,9 @@ calendarStart.addEventListener("change", function(){
 // console.log(startDate);
 
 let calendarEnd = document.getElementById("end");
-let endDate = calendarEnd.value.replace(/-/g,"");
-calendarEnd.addEventListener("change", function(){
-    let endVal = this.value.replace(/-/g,"");
+let endDate = calendarEnd.value.replace(/-/g, "");
+calendarEnd.addEventListener("change", function () {
+    let endVal = this.value.replace(/-/g, "");
     endDate = endVal;
     console.log("Change end calendarr");
     console.log(endVal);
@@ -51,9 +70,9 @@ window.addEventListener("load", function () {
     mySocket = new WebSocket("ws://localhost:9000");
     // Ecoute pour les messages arrivant
     mySocket.onmessage = function (event) {
-       // console.log(event.data);
+        // console.log(event.data);
         let res = JSON.parse(event.data);
-        console.log(res)
+        console.log(res);
         if (res["fct"] === "getAllHumanitarianEventsByRegionByYear") {
             addCircles(res["data"]);
         } else if (res["fct"] === "getAllHumanitarianEventsByRegionByMonthByYear") {
@@ -68,6 +87,8 @@ window.addEventListener("load", function () {
             addColoredCircles(res["data"], true);
         } else if (res["fct"] === "getCountDifferentEventsByCountryCodeByStartByEnd") {
             addInfoRegion(res["data"]);
+        } else if (res["fct"] === "getEventsByBrushByStartByEnd") {
+            addBrushedCircles(res["data"], true);
         }
     };
 });
@@ -82,16 +103,29 @@ let width = 1000,
     height = 600;
 // height = 800;
 
+let widthLegend = 200,
+    heightLegend = 600;
+
 let widthBarChart = 400,
     heightBarChart = 130;
 
 // MAP
+let brush = d3.brush()
+    .extent([[0, 0], [width, height]])
+    .on("start", clearBrushed)
+    .on("end", brushed);
+
 let svg = d3.select("#area1").append("svg");
-svg.append("rect")
-    .attr("class", "background")
-    .attr("width", width + margin.left + margin.right)
-    .attr("height", height + margin.top + margin.bottom)
-    .on("click", reset);
+// svg.append("rect")
+//     .attr("class", "background")
+//     .attr("width", width + margin.left + margin.right)
+//     .attr("height", height + margin.top + margin.bottom)
+//     .call(brush)
+//     .on("mousedown touchstart", reset);
+
+// svg.append("g")
+//     .attr("class", "brush")
+//     .call(brush);
 
 // SVG
 let svgBarChart = d3.select("#area2").append("svg");
@@ -99,13 +133,13 @@ let svgBarChart = d3.select("#area2").append("svg");
 let gBarChart = svgBarChart.append("g")
     .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-svg.append("rect")
-    .attr("class", "background")
-    .attr("width", widthBarChart + margin.left + margin.right)
-    .attr("height", heightBarChart + margin.top + margin.bottom)
-    .append("g")
-    .attr("transform",
-        "translate(" + margin.left + "," + margin.top + ")");
+// svg.append("rect")
+//     .attr("class", "background")
+//     .attr("width", widthBarChart + margin.left + margin.right)
+//     .attr("height", heightBarChart + margin.top + margin.bottom)
+//     .append("g")
+//     .attr("transform",
+//         "translate(" + margin.left + "," + margin.top + ")");
 
 
 let projection = d3.geoMercator()
@@ -125,6 +159,27 @@ let zoom = d3.zoom()
     .on("zoom", zoomed);
 
 let g = svg.append("g");
+
+function clearBrushed() {
+    console.log("kikoo ça clear");
+    svg.selectAll(".brushedCircles")
+        .remove();
+}
+
+function brushed() {
+    console.log("kikoo ça brush");
+    if(d3.event.selection) {
+        let s = d3.event.selection,
+            c0 = s[0], // Top lef
+            c1 = s[1]; // Bottom right
+
+        let coord0 = projection.invert(c0);
+        let coord1 = projection.invert(c1);
+        console.log(coord0, coord1);
+
+        sendRequest('getEventsByBrushByStartByEnd', coord0, coord1, startDate, endDate)
+    }
+}
 
 function sendRequest(name, ...args) {
     let msg = {
@@ -213,7 +268,7 @@ d3.json('europe.geojson', function (error, geojson) {
         .on("mouseout", function (e) {
             showOut(europe);
         })
-        .on("click", function (e) {
+        .on("mousedown touchstart", function (e) {
             showActive(this);
             console.log("Select Europe");
 //            sendRequest("getAllHumanitarianEventsByRegionByYear", "europe", 2017);
@@ -246,7 +301,7 @@ d3.json('africa.geojson', function (error, geojson) {
         .on("mouseout", function (e) {
             showOut(africa);
         })
-        .on("click", function (e) {
+        .on("mousedown touchstart", function (e) {
             showActive(this);
             console.log("Select Africa");
 //            sendRequest("getAllHumanitarianEventsByRegionByYear", "africa", 2017);
@@ -274,12 +329,12 @@ d3.json('north-america.geojson', function (error, geojson) {
         .on("mouseout", function (e) {
             showOut(northAmerica);
         })
-        .on("click", function (e) {
+        .on("mousedown touchstart", function (e) {
             showActive(this);
             console.log("Select NorthAmerica");
 //            sendRequest("getAllHumanitarianEventsByRegionByYear", "northamerica", 2017);
 //            sendRequest("getDifferentEventsByRegionByMonthByYear", "northamerica", month, "2017");
-sendRequest("getEventByCountryCodeByStartByEnd", "northamerica", startDate, endDate);
+            sendRequest("getEventByCountryCodeByStartByEnd", "northamerica", startDate, endDate);
         })
     // .on("click", clicked);
 });
@@ -300,7 +355,7 @@ d3.json('south-america.geojson', function (error, geojson) {
         .on("mouseout", function (e) {
             showOut(southAmerica);
         })
-        .on("click", function (e) {
+        .on("mousedown touchstart", function (e) {
             showActive(this);
             console.log("Select SouthAmerica");
 //            sendRequest("getAllHumanitarianEventsByRegionByYear", "southamerica", 2017);
@@ -328,7 +383,7 @@ d3.json('oceania.geojson', function (error, geojson) {
         .on("mouseout", function (e) {
             showOut(oceania);
         })
-        .on("click", function (e) {
+        .on("mousedown touchstart", function (e) {
             showActive(this);
             console.log("Select Oceania");
 //            sendRequest("getAllHumanitarianEventsByRegionByYear", "oceania", 2017);
@@ -356,7 +411,7 @@ d3.json('asia.geojson', function (error, geojson) {
         .on("mouseout", function (e) {
             showOut(asia);
         })
-        .on("click", function (e) {
+        .on("mousedown touchstart", function (e) {
             showActive(this);
             console.log("Select Asia");
 //            sendRequest("getAllHumanitarianEventsByRegionByYear", "asia", 2017);
@@ -434,6 +489,40 @@ function addColoredCircles(points, is_event) {
         });
 }
 
+function addBrushedCircles(points, is_event) {
+
+    svg.selectAll(".brushedCircles")
+        .data(points).enter()
+        .append("circle")
+        .attr("class", "brushedCircles")
+        .attr("cx", function (d) {
+            return projection(d["_id"]["loc"]["coordinates"])[0];
+        })
+        .attr("cy", function (d) {
+            return projection(d["_id"]["loc"]["coordinates"])[1];
+        })
+        .style("fill", function (d) {
+            let color;
+            if (is_event) {
+                color = colors[d["_id"]["eventCode"]];
+            } else {
+                color = "red";
+            }
+            return color;
+        })
+        .transition("time")
+        .delay(function (d, i) {
+            return i;
+        })
+        .duration(function (d, i) {
+            return (i + 1)
+        })
+        .attr("r", function (d) {
+            let rad = radiusScale(Math.min(10000, d["count"]));
+            return rad + "px"
+        });
+}
+
 function addInfoRegion(data) {
 
     gBarChart.selectAll(".bar").remove();
@@ -475,7 +564,8 @@ function addInfoRegion(data) {
         .attr("width", function (d) {
             return x(d["count"]);
         })
-        .style("fill", function (d){
+        .style("fill", function (d) {
             return colors[d["_id"]];
         });
 }
+

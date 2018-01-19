@@ -2,6 +2,37 @@ from pymongo import MongoClient, GEOSPHERE
 from datetime import datetime
 
 
+def getEventsByBrushByStartByEnd(args, db):
+    """
+    Get all events given a brush, a start date and an end date
+    :param args: a brush, start_date, end_date
+    :param db: MongoDB test database
+    :return:
+    """
+    # get gdelt collection
+    collection = db.gdelt
+
+    # get brush and year
+    brush_top_left = args[0]
+    brush_bottom_right = args[1]
+
+    brush_bottom_left = [float(brush_top_left[0]), float(brush_bottom_right[1])]
+    brush_top_right = [float(brush_bottom_right[0]), float(brush_top_left[1])]
+
+    # get dates
+    start_date = int(args[2])
+
+    end_date = int(args[3])
+
+    match = {"$match": {"loc": {"$geoWithin": {"$box": [brush_bottom_left, brush_top_right]}},
+                        "Day": {"$gte": start_date, "$lt": end_date}}}
+    group = {
+        "$group": {"_id": {"loc": "$loc", "eventCode": "$EventCode"}, "count": {"$sum": 1}}}
+    result = collection.aggregate([match, group])
+
+    return list(result)
+
+
 def getEventByCountryCodeByStartByEndDate(args, db):
     """
     Get all events given a start date and an end date
@@ -10,7 +41,8 @@ def getEventByCountryCodeByStartByEndDate(args, db):
     :return:
     """
     # get gdelt collection
-    collection = db.gdelt_date
+    collection = db.gdelt
+    # collection = db.gdelt_date
 
     # get region and year
     r = args[0]
@@ -79,7 +111,8 @@ def getEventByCountryCodeByMonthByYear(args, db):
     :return:
     """
     # get gdelt collection
-    collection = db.gdelt_date
+    # collection = db.gdelt_date
+    collection = db.gdelt
 
     # get region and year
     list_countries = args[0]
@@ -100,7 +133,8 @@ def getCountDifferentEventsByCountryCodeByMonthByYear(args, db):
     """
 
     # get gdelt collection
-    collection = db.gdelt_date
+    # collection = db.gdelt_date
+    collection = db.gdelt
 
     # get region and year
     list_countries = args[0]
@@ -150,7 +184,8 @@ def getAllHumanitarianEventsByRegionByYear(args, db):
     :return:
     """
     # get gdelt collection
-    collection = db.gdelt_date
+    # collection = db.gdelt_date
+    collection = db.gdelt
     collection.create_index([("loc", GEOSPHERE)])
 
     # get region and year
@@ -179,7 +214,8 @@ def getAllHumanitarianEventsByRegionByMonthByYear(args, db):
     :return:
     """
     # get gdelt collection
-    collection = db.gdelt_date
+    # collection = db.gdelt_date
+    collection = db.gdelt
     collection.create_index([("loc", GEOSPHERE)])
 
     # get region and year
@@ -208,7 +244,8 @@ def getDifferentEventsByRegionByYear(args, db):
     :return:
     """
     # get gdelt collection
-    collection = db.gdelt_date
+    # collection = db.gdelt_date
+    collection = db.gdelt
     collection.create_index([("loc", GEOSPHERE)])
 
     # get region and year
@@ -237,7 +274,8 @@ def getDifferentEventsByRegionByMonthByYear(args, db):
     :return:
     """
     # get gdelt collection
-    collection = db.gdelt_date
+    # collection = db.gdelt_date
+    collection = db.gdelt
     collection.create_index([("loc", GEOSPHERE)])
 
     # get region and year

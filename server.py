@@ -13,7 +13,8 @@ api = {'getAllHumanitarianEventsByRegionByYear': getAllHumanitarianEventsByRegio
        'getAllHumanitarianEventsByRegionByMonthByYear': getAllHumanitarianEventsByRegionByMonthByYear,
        'getCountDifferentEventsByCountryCodeByMonthByYear': getCountDifferentEventsByCountryCodeByMonthByYear,
        'getEventByCountryCodeByStartByEnd': getEventByCountryCodeByStartByEnd,
-       'getCountDifferentEventsByCountryCodeByStartByEnd': getCountDifferentEventsByCountryCodeByStartByEnd}
+       'getCountDifferentEventsByCountryCodeByStartByEnd': getCountDifferentEventsByCountryCodeByStartByEnd,
+       'getEventsByBrushByStartByEnd': getEventsByBrushByStartByEnd}
 
 
 class MyServerProtocol(WebSocketServerProtocol):
@@ -48,8 +49,8 @@ def handle_msg(msg):
     print("Request : " + request['fct'])
 
     # return api[request['fct']](request["args"])
-
-    dump = json.dumps({'data': api[request['fct']](request["args"], database),
+    res = api[request['fct']](request["args"], database)
+    dump = json.dumps({'data': res,
                        'args': request["args"],
                        'fct': request['fct']})
 
@@ -71,8 +72,6 @@ if __name__ == '__main__':
 
     # create a MongoClient to the running mongod instance
     client = MongoClient('localhost', 27017)
-    # client = MongoClient('ec2-34-238-246-140.compute-1.amazonaws.com', 27017,
-    #                      ssl_keyfile="/Users/thaianthantrong/Downloads/gdeltKeyPair.pem")
 
     # getting a Database
     database = client.test
