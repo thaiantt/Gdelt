@@ -41,6 +41,13 @@ svg {
     stroke-width: 0.3;
 }
 
+.brushedCircles {
+    fill: mediumaquamarine;
+    stroke: #fff;
+    opacity: 0.3;
+    stroke-width: 0.3;
+}
+
 .bar {
     fill: steelblue;
 }

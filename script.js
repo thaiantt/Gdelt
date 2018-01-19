@@ -524,18 +524,16 @@ function addBrushedCircles(points, is_event) {
 }
 
 function addInfoRegion(data) {
-
     gBarChart.selectAll(".bar").remove();
     gBarChart.selectAll("g").remove();
 
     // set the ranges
-    let x = d3.scaleLinear()
+    let x = d3.scaleLog()
         .range([0, widthBarChart]);
     let y = d3.scaleBand()
         .range([heightBarChart, 0]);
 
-
-    x.domain([0, d3.max(data, function (d) {
+    x.domain([1, d3.max(data, function (d) {
         return d["count"];
     })]);
     y.domain(data.map(function (d) {
@@ -546,7 +544,7 @@ function addInfoRegion(data) {
     gBarChart.append("g")
         .attr("class", "x axis")
         .attr("transform", "translate(0," + heightBarChart + ")")
-        .call(d3.axisBottom(x));
+        .call(d3.axisBottom(x).ticks(5, ".1s"));
 
     gBarChart.append("g")
         .attr("class", "y axis")

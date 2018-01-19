@@ -63,7 +63,7 @@ def getEventByCountryCodeByStartByEndDate(args, db):
     match = {"$match": {"loc": {"$geoWithin": {"$geometry": zone["geometry"]}},
                         "Day": {"$gte": start_date, "$lt": end_date}}}
     group = {
-        "$group": {"_id": {"loc": "$loc", "Day": "$Day", "eventCode": "$EventCode"}, "count": {"$sum": 1}}}
+        "$group": {"_id": {"loc": "$loc", "eventCode": "$EventCode"}, "count": {"$sum": 1}}}
     result = collection.aggregate([match, group])  # Group by monthyear (not day)
 
     return list(result)
@@ -96,7 +96,7 @@ def getEventByCountryCodeByStartByEnd(args, db):
     match = {"$match": {"loc": {"$geoWithin": {"$geometry": zone["geometry"]}},
                         "Day": {"$gte": start_date, "$lt": end_date}}}
     group = {
-        "$group": {"_id": {"loc": "$loc", "Day": "$Day", "eventCode": "$EventCode"}, "count": {"$sum": 1}}}
+        "$group": {"_id": {"loc": "$loc", "eventCode": "$EventCode"}, "count": {"$sum": 1}}}
     result = collection.aggregate([match, group])  # Group by monthyear (not day)
 
     # print(list(result))
