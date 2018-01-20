@@ -76,6 +76,9 @@ if __name__ == '__main__':
     # getting a Database
     database = client.test
 
+    # create indexes
+    create_indexes(database)
+
     factory = WebSocketServerFactory()
     factory.protocol = MyServerProtocol
 

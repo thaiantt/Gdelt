@@ -44,8 +44,7 @@
     <div class="slides">
         <section>
             <h1>INF728</h1>
-            <h4>Gdelt</h4>
-            <h2>Kikoo</h2>
+            <h4>Analyse de l'année 2017 via la base de données GDELT</h4>
             <p>
                 <small>Xavier Charef, Rémi Sanchez, Thai-An Than Trong, Christophe Thibault</small>
             </p>
@@ -81,6 +80,12 @@
                 <ul>
                     <li>AWS</li>
                     <li>MongoDB</li>
+                    <ul>
+                        <li>Données au format JSON</li>
+                        <li>Géolocalisation</li>
+                        <!--<li>Orienté document</li>-->
+                        <li>Requêtes complexes</li>
+                    </ul>
                 </ul>
             </section>
             <section>
@@ -90,16 +95,19 @@
                     <ul>
                         <li>Twisted</li>
                         <li>Autobahn</li>
+                        <li>Pymongo</li>
                     </ul>
                     <li>WebSocket</li>
                 </ul>
             </section>
             <section>
                 <h3>Visualisation de données</h3>
-                <p>HTML/CSS</p>
-                <p>JavaScript</p>
                 <ul>
-                    <li>d3.js</li>
+                <li>HTML/CSS</li>
+                <li>JavaScript</li>
+                    <ul>
+                        <li>d3.js</li>
+                    </ul>
                 </ul>
             </section>
         </section>
@@ -113,7 +121,7 @@
             <!--<h2>Contenu de l'API</h2>-->
             <section>
                 <h3>Liste des fonctions de l'API</h3>
-                <pre><code data-trim contenteditable class="hljs-attr">
+                <pre><code data-trim contenteditable >
 						getEventByCountryCodeByStartByEndDate(list_countries, start_date, end_date, db)
 						getEventByCountryCodeByStartByEnd(region, start_date, end_date, db)
 						getEventByCountryCodeByMonthByYear(region, month, year, db)
@@ -135,7 +143,7 @@
 							   "$match": {
 							      "Actor1Geo_CountryCode": {
 							         "$in": list_countries
-							      },
+                                  },
 							      "Day": {
 							         "$gte": start_date,
 							         "$lt": end_date
@@ -150,7 +158,7 @@
 							      }
 							   }
 							}])
-						</code></pre>
+                </code></pre>
             </section>
 
             <section>
@@ -175,7 +183,6 @@
 							   "$group": {
 							      "_id": {
 							         "loc": "$loc",
-							         "Day": "$Day",
 							         "eventCode": "$EventCode"
 							      },
 							      "count": {
@@ -183,7 +190,7 @@
 							      }
 							   }
 							}])
-						</code></pre>
+                </code></pre>
             </section>
             <section>
                 <h2>Démonstration</h2>

@@ -1,5 +1,22 @@
-from pymongo import MongoClient, GEOSPHERE
+from pymongo import MongoClient, GEOSPHERE, ASCENDING, DESCENDING, TEXT
 from datetime import datetime
+
+
+def create_indexes(db):
+    """
+    Create indices in gdelt collection
+    :return:
+    """
+    # get gdelt collection
+    collection = db.gdelt
+
+    # create indexes
+    collection.create_index([("loc", GEOSPHERE)])
+    collection.create_index([("Actor1Geo_CountryCode", TEXT)])
+    collection.create_index([("EventCode", ASCENDING)])
+    collection.create_index([("Day", DESCENDING)])
+
+    print("--- CREATED INDEXES")
 
 
 def getEventsByBrushByStartByEnd(args, db):

@@ -5,14 +5,110 @@ let colors = {
     333: "lightskyblue",
     233: "lightgreen",
     73: "orchid",
-    1233: "palevioletred"
+    1223: "palevioletred"
 };
 
-console.log(regionCode);
+let colorsLegend = [];
+
+for (let k of Object.keys(colors)) {
+    colorsLegend.push({
+        key: k,
+        val: colors[k]
+    });
+}
+
+let nameLegends = {
+    1033: "Demand humanitarian help",
+    333: "Express intent to provide humanitarian aid",
+    233: "Appeal for humanitarian aid",
+    73: "Provide humanitarian aid",
+    1223: "Reject request for humanitarian aid"
+};
+
+let radiusScale = d3.scaleLog()
+    .domain([1, 5000])
+    .range([1, 20]);
+
+let dataCircle = [
+    {size: 1, value: radiusScale.invert(1)},
+    {size: 5, value: radiusScale.invert(5)},
+    {size: 10, value: radiusScale.invert(10)},
+    {size: 15, value: radiusScale.invert(15)},
+    {size: 20, value: radiusScale.invert(20)}
+    ];
+
+console.log(dataCircle);
+
+function plotLegend(colorsLegend) {
+    console.log(colorsLegend);
+    let svg = d3.select("#legend")
+        .append("svg")
+        .attr("height", 300);
+
+    svg.selectAll(".legendColor")
+        .data(colorsLegend).enter()
+        .append("circle")
+        .attr("class", "legendColor")
+        .attr("cx", 5)
+        .attr("cy", function (d, i) {
+            return 10 + i * 20;
+        })
+        .attr("r", 5)
+        .style("fill", function (d) {
+            console.log(d.val);
+            return d.val;
+        });
+
+    svg.selectAll(".legendText")
+        .data(colorsLegend).enter()
+        .append("text")
+        .attr("class", "legendText")
+        .attr("x", 20)
+        .attr("y", function (d, i) {
+            return 15 + i * 20;
+        })
+        .attr("font-family", "sans-serif")
+        .attr("font-size", "12px")
+        .text(function(d, i) {
+            return nameLegends[d.key]
+        });
+
+    svg.selectAll(".legendSize")
+        .data(dataCircle).enter()
+        .append("circle")
+        .attr("class", "legendSize")
+        .attr("cx", function (d, i) {
+            return 15 + i * (30 + d.size) ;
+        })
+        .attr("cy", 140)
+        .attr("opacity", 0.3)
+        .attr("r", function (d, i) {
+            return d.size;
+        });
+
+    svg.selectAll(".legendSizeText")
+        .data(dataCircle).enter()
+        .append("text")
+        .attr("class", "legendSizeText")
+        .attr("x", function (d, i) {
+            return 15 + i * (30 + d.size) ;
+        })
+        .attr("y", 170)
+        .attr("font-family", "sans-serif")
+        .attr("font-size", "11px")
+        .style("text-anchor", "middle")
+        .text(function(d, i) {
+            return Math.round(d.value);
+        });
+
+
+}
+
+plotLegend(colorsLegend);
 
 let modeBrush = false;
 let modeBtn = document.getElementById("mode");
-modeBtn.addEventListener("click", function() {
+modeBtn.addEventListener("click", function () {
     modeBrush = !modeBrush;
     svg.selectAll("circle").remove();
     svg.selectAll(".selected").classed("selected", false);
@@ -168,7 +264,7 @@ function clearBrushed() {
 
 function brushed() {
     console.log("kikoo ça brush");
-    if(d3.event.selection) {
+    if (d3.event.selection) {
         let s = d3.event.selection,
             c0 = s[0], // Top lef
             c1 = s[1]; // Bottom right
@@ -426,11 +522,6 @@ d3.json('asia.geojson', function (error, geojson) {
 // *                INTERACTIONS                    *
 // **************************************************
 // add circles to svg
-
-var radiusScale = d3.scaleLog()
-    .domain([1, 5000])
-    .range([1, 20]);
-
 function addCircles(points, is_event) {
     console.log("Append new circles", points);
     // svg.selectAll("circle")
@@ -484,7 +575,7 @@ function addColoredCircles(points, is_event) {
             return (i + 1)
         })
         .attr("r", function (d) {
-            let rad = radiusScale(Math.min(10000, d["count"]));
+            let rad = radiusScale(Math.min(5000, d["count"]));
             return rad + "px"
         });
 }
@@ -518,7 +609,7 @@ function addBrushedCircles(points, is_event) {
             return (i + 1)
         })
         .attr("r", function (d) {
-            let rad = radiusScale(Math.min(10000, d["count"]));
+            let rad = radiusScale(Math.min(5000, d["count"]));
             return rad + "px"
         });
 }
