@@ -73,3 +73,17 @@ svg {
     stroke-width: 1px;
     shape-rendering: crispEdges;
 }
+
+#count {
+    position: absolute;
+    left:600px;
+    top:580px;
+    font-family: sans-serif;
+    text-anchor: middle;
+}
+
+#countNb {
+    font-size: 50px;
+    font-family: sans-serif;
+    text-anchor: middle;
+}

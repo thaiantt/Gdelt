@@ -41,9 +41,26 @@ console.log(dataCircle);
 
 function plotLegend(colorsLegend) {
     console.log(colorsLegend);
+    let ref = 80;
     let svg = d3.select("#legend")
         .append("svg")
-        .attr("height", 300);
+        .attr("height", 500);
+
+    svg.append("text")
+        .attr("class", "title")
+        .attr("x", 120)
+        .attr("y", 30)
+        .attr("font-family", "sans-serif")
+        .attr("font-size", "20px")
+        .style("text-anchor", "middle")
+        .text("Gdelt Analysis");
+
+    svg.append("text")
+        .attr("x", 1)
+        .attr("y", ref - 5)
+        .attr("font-family", "sans-serif")
+        .attr("font-size", "14px")
+        .text("Legend");
 
     svg.selectAll(".legendColor")
         .data(colorsLegend).enter()
@@ -51,7 +68,7 @@ function plotLegend(colorsLegend) {
         .attr("class", "legendColor")
         .attr("cx", 5)
         .attr("cy", function (d, i) {
-            return 10 + i * 20;
+            return ref + 10 + i * 20;
         })
         .attr("r", 5)
         .style("fill", function (d) {
@@ -65,7 +82,7 @@ function plotLegend(colorsLegend) {
         .attr("class", "legendText")
         .attr("x", 20)
         .attr("y", function (d, i) {
-            return 15 + i * 20;
+            return ref + 15 + i * 20;
         })
         .attr("font-family", "sans-serif")
         .attr("font-size", "12px")
@@ -80,7 +97,7 @@ function plotLegend(colorsLegend) {
         .attr("cx", function (d, i) {
             return 15 + i * (30 + d.size) ;
         })
-        .attr("cy", 140)
+        .attr("cy", ref + 140)
         .attr("opacity", 0.3)
         .attr("r", function (d, i) {
             return d.size;
@@ -93,7 +110,7 @@ function plotLegend(colorsLegend) {
         .attr("x", function (d, i) {
             return 15 + i * (30 + d.size) ;
         })
-        .attr("y", 170)
+        .attr("y", ref + 170)
         .attr("font-family", "sans-serif")
         .attr("font-size", "11px")
         .style("text-anchor", "middle")
@@ -141,9 +158,12 @@ let calendarStart = document.getElementById("start");
 let startDate = calendarStart.value.replace(/-/g, "");
 calendarStart.addEventListener("change", function () {
     let startVal = this.value.replace(/-/g, "");
-    startDate = startVal;
-    console.log("Change start calendar");
-    console.log(startVal); //YYY-MM-DD
+    if(startVal) {
+        startDate = startVal;
+        console.log("Change start calendar");
+        console.log(startVal); //YYY-MM-DD
+        sendRequest("getCountAllByStartByEnd", startDate, endDate)
+    }
 });
 
 // let startDate = calendarStart.value;
@@ -153,9 +173,12 @@ let calendarEnd = document.getElementById("end");
 let endDate = calendarEnd.value.replace(/-/g, "");
 calendarEnd.addEventListener("change", function () {
     let endVal = this.value.replace(/-/g, "");
-    endDate = endVal;
-    console.log("Change end calendarr");
-    console.log(endVal);
+    if(endVal) {
+        endDate = endVal;
+        console.log("Change end calendarr");
+        console.log(endVal);
+        sendRequest("getCountAllByStartByEnd", startDate, endDate)
+    }
 });
 // let endDate = calendarEnd.value;
 // console.log(endDate);
@@ -186,7 +209,14 @@ window.addEventListener("load", function () {
         } else if (res["fct"] === "getEventsByBrushByStartByEnd") {
             addBrushedCircles(res["data"], true);
         }
+        else if (res["fct"] === "getCountAllByStartByEnd") {
+            addCount(res["data"]);
+        }
     };
+    mySocket.onopen = function () {
+        sendRequest("getCountAllByStartByEnd", startDate, endDate)
+    }
+
 });
 
 let t;
@@ -658,3 +688,8 @@ function addInfoRegion(data) {
         });
 }
 
+function addCount(number){
+    let count = document.getElementById("countNb");
+
+    count.innerHTML = number;
+}
