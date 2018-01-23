@@ -1,6 +1,8 @@
 from pymongo import MongoClient, GEOSPHERE, ASCENDING, DESCENDING, TEXT
 from datetime import datetime
 
+event_codes = [1033, 333, 233, 73, 1223]
+
 
 def create_indexes(db):
     """
@@ -17,6 +19,77 @@ def create_indexes(db):
     collection.create_index([("Day", DESCENDING)])
 
     print("--- CREATED INDEXES")
+
+
+def getLinksByRegionByStartByEnd(args, db):
+    # get gdelt collection
+    collection = db.gdelt
+
+    # get region
+    list_countries = args[0]
+
+    # get dates
+    start_date = int(args[1])
+    end_date = int(args[2])
+
+    match = {"$match": {"EventCode": {"$in": event_codes},
+                        "Actor1Geo_CountryCode": {"$in": list_countries},
+                        "Actor2Geo_CountryCode": {"$ne": "$Actor1Geo_CountryCode"},
+                        "Day": {"$gte": start_date, "$lt": end_date}}}
+    group = {"$group": {"_id": "$Actor1Geo_CountryCode", "actors2": {"$push": "$Actor2Geo_CountryCode"}}}
+    result = collection.aggregate([match, group])
+
+    return list(result)
+
+
+def getUndirectedLinksByRegionByStartByEnd(args, db):
+    # get gdelt collection
+    collection = db.gdelt
+
+    # get region
+    list_countries = args[0]
+
+    # get dates
+    start_date = int(args[1])
+    end_date = int(args[2])
+
+    f1 = {"$match": {"Actor1Geo_CountryCode": {"$in": list_countries},
+                     "Actor2Geo_CountryCode": {"$ne": "$Actor1Geo_CountryCode"},
+                     "EventCode": {"$in": event_codes},
+                     "Day": {"$gte": start_date, "$lt": end_date}}}
+    group1 = {"$group": {"_id": "$Actor1Geo_CountryCode", "resp": {"$push": "$Actor2Geo_CountryCode"}}}
+    # project1 = {"$project": {"_id":0, "actor" : "$Actor1Geo_CountryCode", "resp" : "$Actor2Geo_CountryCode"}}
+    result1 = collection.aggregate([f1, group1])
+
+    f2 = {
+        "$match": {"Actor1Geo_CountryCode": {"$in": list_countries}, "Actor2Geo_CountryCode": {"$nin": list_countries},
+                   "Day": {"$gte": start_date, "$lt": end_date}}}
+    group2 = {"$group": {"_id": "$Actor2Geo_CountryCode", "resp": {"$push": "$Actor1Geo_CountryCode"}}}
+    # project2 = {"$project": {"_id":0, "actor" : "$Actor2Geo_CountryCode", "resp" : "Actor1Geo_CountryCode"}}
+    result2 = collection.aggregate([f2, group2])
+
+    return list(result1) + list(result2)
+
+
+def getCountAllByStartByEnd(args, db):
+    """
+    Get count of all events given a start date and an end date
+    :param args: start_date, end_date
+    :param db: MongoDB test database
+    :return:
+    """
+    # get gdelt collection
+    collection = db.gdelt
+
+    # get dates
+    start_date = int(args[0])
+    end_date = int(args[1])
+
+    query = {"EventCode": {"$in": event_codes}, "Day": {"$gte": start_date, "$lt": end_date}}
+
+    result = collection.find(query).count()
+
+    return result
 
 
 def getEventsByBrushByStartByEnd(args, db):
@@ -42,6 +115,7 @@ def getEventsByBrushByStartByEnd(args, db):
     end_date = int(args[3])
 
     match = {"$match": {"loc": {"$geoWithin": {"$box": [brush_bottom_left, brush_top_right]}},
+                        "EventCode": {"$in": event_codes},
                         "Day": {"$gte": start_date, "$lt": end_date}}}
     group = {
         "$group": {"_id": {"loc": "$loc", "eventCode": "$EventCode"}, "count": {"$sum": 1}}}
@@ -78,6 +152,7 @@ def getEventByCountryCodeByStartByEndDate(args, db):
     zone = region.find_one()
 
     match = {"$match": {"loc": {"$geoWithin": {"$geometry": zone["geometry"]}},
+                        "EventCode": {"$in": event_codes},
                         "Day": {"$gte": start_date, "$lt": end_date}}}
     group = {
         "$group": {"_id": {"loc": "$loc", "eventCode": "$EventCode"}, "count": {"$sum": 1}}}
@@ -111,6 +186,7 @@ def getEventByCountryCodeByStartByEnd(args, db):
     zone = region.find_one()
 
     match = {"$match": {"loc": {"$geoWithin": {"$geometry": zone["geometry"]}},
+                        "EventCode": {"$in": event_codes},
                         "Day": {"$gte": start_date, "$lt": end_date}}}
     group = {
         "$group": {"_id": {"loc": "$loc", "eventCode": "$EventCode"}, "count": {"$sum": 1}}}
@@ -135,7 +211,8 @@ def getEventByCountryCodeByMonthByYear(args, db):
     list_countries = args[0]
     month_year = int(args[2] + args[1])
 
-    query = {"Actor1Geo_CountryCode": {"$in": list_countries}, "MonthYear": month_year}
+    query = {"EventCode": {"$in": event_codes}, "Actor1Geo_CountryCode": {"$in": list_countries},
+             "MonthYear": month_year}
     result = collection.find(query)
 
     return list(result)
@@ -157,7 +234,8 @@ def getCountDifferentEventsByCountryCodeByMonthByYear(args, db):
     list_countries = args[0]
     month_year = int(args[2] + args[1])
 
-    match = {"$match": {"Actor1Geo_CountryCode": {"$in": list_countries}, "MonthYear": month_year}}
+    match = {"$match": {"EventCode": {"$in": event_codes}, "Actor1Geo_CountryCode": {"$in": list_countries},
+                        "MonthYear": month_year}}
     group = {"$group": {"_id": "$EventCode", "count": {"$sum": 1}}}
     result = collection.aggregate([match, group])
 
@@ -185,7 +263,7 @@ def getCountDifferentEventsByCountryCodeByStartByEnd(args, db):
 
     print(start_date, end_date)
 
-    match = {"$match": {"Actor1Geo_CountryCode": {"$in": list_countries},
+    match = {"$match": {"EventCode": {"$in": event_codes}, "Actor1Geo_CountryCode": {"$in": list_countries},
                         "Day": {"$gte": start_date, "$lt": end_date}}}
     group = {"$group": {"_id": "$EventCode", "count": {"$sum": 1}}}
     result = collection.aggregate([match, group])
@@ -215,7 +293,8 @@ def getAllHumanitarianEventsByRegionByYear(args, db):
 
     zone = region.find_one()
 
-    match = {"$match": {"loc": {"$geoWithin": {"$geometry": zone["geometry"]}}, "Year": year}}
+    match = {"$match": {"EventCode": {"$in": event_codes}, "loc": {"$geoWithin": {"$geometry": zone["geometry"]}},
+                        "Year": year}}
     group = {"$group": {"_id": "$loc", "count": {"$sum": 1}}}
 
     aggregate = collection.aggregate([match, group])
@@ -245,7 +324,8 @@ def getAllHumanitarianEventsByRegionByMonthByYear(args, db):
 
     zone = region.find_one()
 
-    match = {"$match": {"loc": {"$geoWithin": {"$geometry": zone["geometry"]}}, "MonthYear": month_year}}
+    match = {"$match": {"EventCode": {"$in": event_codes}, "loc": {"$geoWithin": {"$geometry": zone["geometry"]}},
+                        "MonthYear": month_year}}
     group = {"$group": {"_id": "$loc", "count": {"$sum": 1}}}
 
     aggregate = collection.aggregate([match, group])
@@ -275,7 +355,8 @@ def getDifferentEventsByRegionByYear(args, db):
 
     zone = region.find_one()
 
-    match = {"$match": {"loc": {"$geoWithin": {"$geometry": zone["geometry"]}}, "Year": year}}
+    match = {"$match": {"EventCode": {"$in": event_codes}, "loc": {"$geoWithin": {"$geometry": zone["geometry"]}},
+                        "Year": year}}
     group = {"$group": {"_id": {"loc": "$loc", "eventCode": "$EventCode"}, "count": {"$sum": 1}}}
 
     aggregate = collection.aggregate([match, group])
@@ -306,7 +387,8 @@ def getDifferentEventsByRegionByMonthByYear(args, db):
 
     zone = region.find_one()
 
-    match = {"$match": {"loc": {"$geoWithin": {"$geometry": zone["geometry"]}}, "MonthYear": month_year}}
+    match = {"$match": {"EventCode": {"$in": event_codes}, "loc": {"$geoWithin": {"$geometry": zone["geometry"]}},
+                        "MonthYear": month_year}}
     group = {"$group": {"_id": {"loc": "$loc", "eventCode": "$EventCode"}, "count": {"$sum": 1}}}
 
     aggregate = collection.aggregate([match, group])

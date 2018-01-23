@@ -35,9 +35,7 @@ let dataCircle = [
     {size: 10, value: radiusScale.invert(10)},
     {size: 15, value: radiusScale.invert(15)},
     {size: 20, value: radiusScale.invert(20)}
-    ];
-
-console.log(dataCircle);
+];
 
 function plotLegend(colorsLegend) {
     console.log(colorsLegend);
@@ -86,7 +84,7 @@ function plotLegend(colorsLegend) {
         })
         .attr("font-family", "sans-serif")
         .attr("font-size", "12px")
-        .text(function(d, i) {
+        .text(function (d, i) {
             return nameLegends[d.key]
         });
 
@@ -95,7 +93,7 @@ function plotLegend(colorsLegend) {
         .append("circle")
         .attr("class", "legendSize")
         .attr("cx", function (d, i) {
-            return 15 + i * (30 + d.size) ;
+            return 15 + i * (30 + d.size);
         })
         .attr("cy", ref + 140)
         .attr("opacity", 0.3)
@@ -108,20 +106,22 @@ function plotLegend(colorsLegend) {
         .append("text")
         .attr("class", "legendSizeText")
         .attr("x", function (d, i) {
-            return 15 + i * (30 + d.size) ;
+            return 15 + i * (30 + d.size);
         })
         .attr("y", ref + 170)
         .attr("font-family", "sans-serif")
         .attr("font-size", "11px")
         .style("text-anchor", "middle")
-        .text(function(d, i) {
+        .text(function (d, i) {
             return Math.round(d.value);
         });
 
 
 }
 
+
 plotLegend(colorsLegend);
+
 
 let modeBrush = false;
 let modeBtn = document.getElementById("mode");
@@ -144,13 +144,13 @@ modeBtn.addEventListener("click", function () {
 });
 
 // MONTH SELECTION
-let monthSelect = document.getElementById("monthSelect");
-monthSelect.addEventListener("change", function () {
-    month = this.value;
-    console.log(month);
-});
-let month = monthSelect.value;
-console.log(month);
+// let monthSelect = document.getElementById("monthSelect");
+// monthSelect.addEventListener("change", function () {
+//     month = this.value;
+//     console.log(month);
+// });
+// let month = monthSelect.value;
+// console.log(month);
 
 
 // CALENDARS
@@ -158,7 +158,7 @@ let calendarStart = document.getElementById("start");
 let startDate = calendarStart.value.replace(/-/g, "");
 calendarStart.addEventListener("change", function () {
     let startVal = this.value.replace(/-/g, "");
-    if(startVal) {
+    if (startVal) {
         startDate = startVal;
         console.log("Change start calendar");
         console.log(startVal); //YYY-MM-DD
@@ -173,7 +173,7 @@ let calendarEnd = document.getElementById("end");
 let endDate = calendarEnd.value.replace(/-/g, "");
 calendarEnd.addEventListener("change", function () {
     let endVal = this.value.replace(/-/g, "");
-    if(endVal) {
+    if (endVal) {
         endDate = endVal;
         console.log("Change end calendarr");
         console.log(endVal);
@@ -186,7 +186,9 @@ calendarEnd.addEventListener("change", function () {
 // RESULTS FROM API
 window.addEventListener("load", function () {
     // Crée l'instance WebSocket
-    mySocket = new WebSocket("ws://localhost:9000");
+    let addr = window.location.href.replace("http://", "").replace(":8080/", "");
+    mySocket = new WebSocket("ws://" + addr + ":9000");
+    // mySocket = new WebSocket("ws://localhost:9000");
     // Ecoute pour les messages arrivant
     mySocket.onmessage = function (event) {
         // console.log(event.data);
@@ -208,9 +210,12 @@ window.addEventListener("load", function () {
             addInfoRegion(res["data"]);
         } else if (res["fct"] === "getEventsByBrushByStartByEnd") {
             addBrushedCircles(res["data"], true);
-        }
-        else if (res["fct"] === "getCountAllByStartByEnd") {
+        } else if (res["fct"] === "getCountAllByStartByEnd") {
             addCount(res["data"]);
+        } else if (res["fct"] === "getLinksByRegionByStartByEnd") {
+            addHierarchicalEdgeBundling(res["data"]);
+        } else if (res["fct"] === "getUndirectedLinksByRegionByStartByEnd") {
+            addUndirectedHierarchicalEdgeBundling(res["data"]);
         }
     };
     mySocket.onopen = function () {
@@ -228,9 +233,6 @@ let margin = {top: 20, right: 20, bottom: 30, left: 40};
 let width = 1000,
     height = 600;
 // height = 800;
-
-let widthLegend = 200,
-    heightLegend = 600;
 
 let widthBarChart = 400,
     heightBarChart = 130;
@@ -255,9 +257,12 @@ let svg = d3.select("#area1").append("svg");
 
 // SVG
 let svgBarChart = d3.select("#area2").append("svg");
+let svgHierarchicalEdgeBundling = d3.select("#hierarchicalEdgeBundling").append("svg");
 
 let gBarChart = svgBarChart.append("g")
     .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+let gHierarchicalEdgeBundling  = svgHierarchicalEdgeBundling .append("g")
+    .attr("transform", "translate(" + 200 + "," + 180 + ")");
 
 // svg.append("rect")
 //     .attr("class", "background")
@@ -275,14 +280,6 @@ let projection = d3.geoMercator()
 
 let path = d3.geoPath()
     .projection(projection);
-
-
-let zoom = d3.zoom()
-// no longer in d3 v4 - zoom initialises with zoomIdentity, so it's already at origin
-// .translate([0, 0])
-// .scale(1)
-    .scaleExtent([1, 8])
-    .on("zoom", zoomed);
 
 let g = svg.append("g");
 
@@ -315,44 +312,6 @@ function sendRequest(name, ...args) {
     mySocket.send(JSON.stringify(msg));
 }
 
-function reset() {
-    active.classed("active", false);
-    active = d3.select(null);
-
-    svg.transition()
-        .duration(750)
-        // .call( zoom.transform, d3.zoomIdentity.translate(0, 0).scale(1) ); // not in d3 v4
-        .call(zoom.transform, d3.zoomIdentity);
-}
-
-function clicked(d, that) {
-    let bbox = that.getBBox();
-
-    if (active.node() === that) return reset();
-    active.classed("active", false);
-    active = d3.select(that).classed("active", true);
-
-    let dx = bbox.width,
-        dy = bbox.height,
-        x = bbox.x + (bbox.width / 2),
-        y = bbox.y + (bbox.height / 2),
-        scale = Math.max(1, Math.min(8, 0.9 / Math.max(dx / width, dy / height))),
-        translate = [width / 2 - scale * x, height / 2 - scale * y];
-
-    t = translate;
-    s = scale;
-
-    svg.transition()
-        .duration(750)
-        // .call(zoom.translate(translate).scale(scale).event); // not in d3 v4
-        .call(zoom.transform, d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale));
-}
-
-function zoomed() {
-    g.style("stroke-width", 1.5 / d3.event.transform.k + "px");
-    // g.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")"); // not in d3 v4
-    g.attr("transform", d3.event.transform); // updated for d3 v4
-}
 
 function showActive(that) {
     if (active.node() !== that) {
@@ -372,6 +331,9 @@ function showOut(elem) {
 
     gBarChart.selectAll(".bar").remove();
     gBarChart.selectAll("g").remove();
+
+    gHierarchicalEdgeBundling.selectAll(".bar").remove();
+    gHierarchicalEdgeBundling.selectAll("g").remove();
 }
 
 // **************************************************
@@ -390,6 +352,7 @@ d3.json('europe.geojson', function (error, geojson) {
         .on("mouseenter", function (e) {
 //            sendRequest("getCountDifferentEventsByCountryCodeByMonthByYear", regionCode.europe, month, "2017");
             sendRequest("getCountDifferentEventsByCountryCodeByStartByEnd", regionCode.europe, startDate, endDate);
+            sendRequest("getUndirectedLinksByRegionByStartByEnd", regionCode.europe, startDate, endDate);
         })
         .on("mouseout", function (e) {
             showOut(europe);
@@ -423,6 +386,7 @@ d3.json('africa.geojson', function (error, geojson) {
         .on("mouseenter", function (e) {
 //            sendRequest("getCountDifferentEventsByCountryCodeByMonthByYear", regionCode.africa, month, "2017");
             sendRequest("getCountDifferentEventsByCountryCodeByStartByEnd", regionCode.africa, startDate, endDate);
+            sendRequest("getUndirectedLinksByRegionByStartByEnd", regionCode.africa, startDate, endDate);
         })
         .on("mouseout", function (e) {
             showOut(africa);
@@ -451,6 +415,7 @@ d3.json('north-america.geojson', function (error, geojson) {
         .on("mouseenter", function (e) {
 //            sendRequest("getCountDifferentEventsByCountryCodeByMonthByYear", regionCode.northAmerica, month, "2017");
             sendRequest("getCountDifferentEventsByCountryCodeByStartByEnd", regionCode.northAmerica, startDate, endDate);
+            sendRequest("getUndirectedLinksByRegionByStartByEnd", regionCode.northAmerica, startDate, endDate);
         })
         .on("mouseout", function (e) {
             showOut(northAmerica);
@@ -477,6 +442,7 @@ d3.json('south-america.geojson', function (error, geojson) {
         .on("mouseenter", function (e) {
 //            sendRequest("getCountDifferentEventsByCountryCodeByMonthByYear", regionCode.southAmerica, month, "2017");
             sendRequest("getCountDifferentEventsByCountryCodeByStartByEnd", regionCode.southAmerica, startDate, endDate);
+            sendRequest("getUndirectedLinksByRegionByStartByEnd", regionCode.southAmerica, startDate, endDate);
         })
         .on("mouseout", function (e) {
             showOut(southAmerica);
@@ -505,6 +471,7 @@ d3.json('oceania.geojson', function (error, geojson) {
         .on("mouseenter", function (e) {
 //            sendRequest("getCountDifferentEventsByCountryCodeByMonthByYear", regionCode.oceania, month, "2017");
             sendRequest("getCountDifferentEventsByCountryCodeByStartByEnd", regionCode.oceania, startDate, endDate);
+            sendRequest("getUndirectedLinksByRegionByStartByEnd", regionCode.oceania, startDate, endDate);
         })
         .on("mouseout", function (e) {
             showOut(oceania);
@@ -533,6 +500,7 @@ d3.json('asia.geojson', function (error, geojson) {
         .on("mouseenter", function (e) {
 //            sendRequest("getCountDifferentEventsByCountryCodeByMonthByYear", regionCode.asia, month, "2017");
             sendRequest("getCountDifferentEventsByCountryCodeByStartByEnd", regionCode.asia, startDate, endDate);
+            sendRequest("getUndirectedLinksByRegionByStartByEnd", regionCode.asia, startDate, endDate);
         })
         .on("mouseout", function (e) {
             showOut(asia);
@@ -688,8 +656,202 @@ function addInfoRegion(data) {
         });
 }
 
-function addCount(number){
+function addCount(number) {
     let count = document.getElementById("countNb");
 
     count.innerHTML = number;
+}
+
+function addHierarchicalEdgeBundling(result){
+    gHierarchicalEdgeBundling.selectAll(".link").remove();
+    gHierarchicalEdgeBundling.selectAll(".node").remove();
+
+    let diameter = 350,
+        radius = diameter / 2,
+        innerRadius = radius - 80;
+
+    let cluster = d3.cluster()
+        .size([360, innerRadius]);
+
+    let line = d3.radialLine()
+        .curve(d3.curveBundle.beta(0.85))
+        .radius(function(d) { return d.y; })
+        .angle(function(d) { return d.x / 180 * Math.PI; });
+
+
+    let link = gHierarchicalEdgeBundling.append("g").selectAll(".link"),
+        node = gHierarchicalEdgeBundling.append("g").selectAll(".node");
+
+    let root = packageHierarchy(result)
+        .sum(function(d) { return d.size; });
+
+    cluster(root);
+
+    link.data(packageImports(root.leaves()))
+        .enter().append("path")
+        .each(function(d) { d.source = d[0]; d.target = d[d.length - 1];})
+        .attr("class", "link")
+        .attr("d", line);
+
+    node.data(root.leaves())
+        .enter().append("text")
+        .attr("class", "node")
+        .attr("dy", "0.31em")
+        .attr("transform", function(d) { return "rotate(" + (d.x - 90) + ")translate(" + (d.y + 8) + ",0)" + (d.x < 180 ? "" : "rotate(180)"); })
+        .attr("text-anchor", function(d) { return d.x < 180 ? "start" : "end"; })
+        .text(function(d) { return regionCodeInvert[d.data.key]; });
+
+
+    // Lazily construct the package hierarchy from class names.
+    function packageHierarchy(result) {
+        let map = {};
+
+        function find(name, data) {
+            let node = map[name], i;
+            if (!node) {
+                node = map[name] = data || {name: name, children: []};
+                if (name.length) {
+                    node.parent = find(name.substring(0, i = name.lastIndexOf(".")));
+                    node.parent.children.push(node);
+                    node.key = name.substring(i + 1);
+                }
+            }
+            return node;
+        }
+
+        result.forEach(function(d) {
+            if (d["_id"]) {
+                find(d["_id"], d);
+            }
+        });
+
+        return d3.hierarchy(map[""]);
+    }
+
+    // Return a list of imports for the given array of nodes.
+    function packageImports(nodes) {
+        let map = {},
+            imports = [];
+
+        // Compute a map from name to node.
+        nodes.forEach(function(d) {
+            let filtered = d;
+            filtered.data.actors2 = d.data.actors2.filter(actor => actor !== d.data._id && actor !== null);
+            map[d.data._id] = filtered;
+        });
+
+        // For each import, construct a link from the source to target node.
+        nodes.forEach(function(d) {
+            if (d.data.actors2){
+                d.data.actors2.forEach(function(i) {
+                    if(i) {
+                        if (map[i]) {
+                            imports.push(map[d.data._id].path(map[i]));
+                        }
+                    }
+                });
+            }
+        });
+
+        return imports;
+    }
+
+}
+
+function addUndirectedHierarchicalEdgeBundling(result){
+    gHierarchicalEdgeBundling.selectAll(".link").remove();
+    gHierarchicalEdgeBundling.selectAll(".node").remove();
+
+    let diameter = 350,
+        radius = diameter / 2,
+        innerRadius = radius - 80;
+
+    let cluster = d3.cluster()
+        .size([360, innerRadius]);
+
+    let line = d3.radialLine()
+        .curve(d3.curveBundle.beta(0.85))
+        .radius(function(d) { return d.y; })
+        .angle(function(d) { return d.x / 180 * Math.PI; });
+
+
+    let link = gHierarchicalEdgeBundling.append("g").selectAll(".link"),
+        node = gHierarchicalEdgeBundling.append("g").selectAll(".node");
+
+    let root = packageHierarchy(result)
+        .sum(function(d) { return d.size; });
+
+    cluster(root);
+
+    link.data(packageImports(root.leaves()))
+        .enter().append("path")
+        .each(function(d) { d.source = d[0]; d.target = d[d.length - 1];})
+        .attr("class", "link")
+        .attr("d", line);
+
+    node.data(root.leaves())
+        .enter().append("text")
+        .attr("class", "node")
+        .attr("dy", "0.31em")
+        .attr("transform", function(d) { return "rotate(" + (d.x - 90) + ")translate(" + (d.y + 8) + ",0)" + (d.x < 180 ? "" : "rotate(180)"); })
+        .attr("text-anchor", function(d) { return d.x < 180 ? "start" : "end"; })
+        .text(function(d) { return regionCodeInvert[d.data.key];});
+
+
+    // Lazily construct the package hierarchy from class names.
+    function packageHierarchy(result) {
+        let map = {};
+
+        function find(name, data) {
+            let node = map[name], i;
+            if (!node) {
+                node = map[name] = data || {name: name, children: []};
+                if (name.length) {
+                    if (regionCodeInvert[name]) {
+                        node.parent = find(name.substring(0, i = name.lastIndexOf(".")));
+                        node.parent.children.push(node);
+                        node.key = name.substring(i + 1);
+                    }
+                }
+            }
+            return node;
+        }
+
+        result.forEach(function(d) {
+            if (d._id) {
+                find(d._id, d);
+            }
+        });
+
+        return d3.hierarchy(map[""]);
+    }
+
+    // Return a list of imports for the given array of nodes.
+    function packageImports(nodes) {
+        let map = {},
+            imports = [];
+
+        // Compute a map from name to node.
+        nodes.forEach(function(d) {
+            let filtered = d;
+            filtered.data.resp = d.data.resp.filter(actor => actor !== d.data._id && actor !== null);
+            map[d.data._id] = filtered;
+        });
+
+        // For each import, construct a link from the source to target node.
+        nodes.forEach(function(d) {
+            if (d.data.resp){
+                d.data.resp.forEach(function(i) {
+                    if (i){
+                        if (map[i]) {
+                            imports.push(map[d.data._id].path(map[i]));
+                        }
+                    }
+                });
+            }
+        });
+
+        return imports;
+    }
+
 }

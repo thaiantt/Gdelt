@@ -14,7 +14,10 @@ api = {'getAllHumanitarianEventsByRegionByYear': getAllHumanitarianEventsByRegio
        'getCountDifferentEventsByCountryCodeByMonthByYear': getCountDifferentEventsByCountryCodeByMonthByYear,
        'getEventByCountryCodeByStartByEnd': getEventByCountryCodeByStartByEnd,
        'getCountDifferentEventsByCountryCodeByStartByEnd': getCountDifferentEventsByCountryCodeByStartByEnd,
-       'getEventsByBrushByStartByEnd': getEventsByBrushByStartByEnd}
+       'getEventsByBrushByStartByEnd': getEventsByBrushByStartByEnd,
+       'getCountAllByStartByEnd': getCountAllByStartByEnd,
+       'getLinksByRegionByStartByEnd': getLinksByRegionByStartByEnd,
+       'getUndirectedLinksByRegionByStartByEnd': getUndirectedLinksByRegionByStartByEnd}
 
 
 class MyServerProtocol(WebSocketServerProtocol):

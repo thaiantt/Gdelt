@@ -54,23 +54,38 @@
             <h2>But du projet</h2>
             <section>Etude des données Gdelt</section>
             <section>Développement d'une API</section>
-            <section>Mise en place d'un système de stockage utilisant des technologies NoSQL</section>
+            <section><p>Mise en place d'un système de stockage utilisant des technologies NoSQL</p>
+            <ul>
+                <li>MongoDB</li>
+            </ul>
+            </section>
         </section>
 
         <section>
             <h2>Choix de la problématique</h2>
             <section>Etude des aides humanitaires</section>
-            <section>Visualiser les demandes, acceptations, refus d'aides humanitaires</section>
+            <section>Visualisation des demandes, acceptations, refus d'aides humanitaires</section>
         </section>
 
         <section>
             <h2>Données utilisées de Gdelt</h2>
             <section>
-                <h4>Filtrage sur la base Events pour récupérer les événements en rapport avec les aides</h4>
-                <p class="fragment">Filtrage selon EventCode</p>
-                <p class="fragment">Traitement de la géolocalisation</p>
-                <h3 class="fragment">Ordre de grandeur du volume final de données : TODO</h3>
+                <h4>Filtrage selon EventCode</h4>
             </section>
+
+            <section>
+                <h4>Traitement de la géolocalisation</h4>
+                Manipulation de la latitude et de la longitude
+                <pre><code data-trim contenteditable class="hljs-attr">
+                    loc: {
+                          type: "Point",
+                          coordinates: [longitude, latitude]
+                    }
+                </code></pre>
+            </section>
+
+            <section><h4>Ordre de grandeur de la base de données : quelques Go</h4></section>
+
         </section>
 
         <section>
@@ -113,8 +128,15 @@
         </section>
 
         <section>
-            <h2>Présentation de l'architecture</h2>
-            <img data-src="Diapositive1.png">
+            <section>
+                <h3>Présentation de l'architecture</h3>
+                <img data-src="Diapositive1.png">
+            </section>
+
+            <section>
+                <h3>Architecture AWS</h3>
+                <img data-src="projet_nosql_im1.png">
+            </section>
         </section>
 
         <section>
@@ -122,15 +144,18 @@
             <section>
                 <h3>Liste des fonctions de l'API</h3>
                 <pre><code data-trim contenteditable >
-						getEventByCountryCodeByStartByEndDate(list_countries, start_date, end_date, db)
-						getEventByCountryCodeByStartByEnd(region, start_date, end_date, db)
-						getEventByCountryCodeByMonthByYear(region, month, year, db)
-						getCountDifferentEventsByCountryCodeByMonthByYear(list_countries, month, year, db)
-						getCountDifferentEventsByCountryCodeByStartByEnd(region, start_date, end_date, db)
-						getAllHumanitarianEventsByRegionByYear(region, year, db)
-						getAllHumanitarianEventsByRegionByMonthByYear(region, month, year, db)
-						getDifferentEventsByRegionByYear(region, year, db)
-						getDifferentEventsByRegionByMonthByYear(region, year, db)
+                    getEventByCountryCodeByStartByEndDate(list_countries, start_date, end_date, db)
+                    getEventByCountryCodeByStartByEnd(region, start_date, end_date, db)
+                    getEventByCountryCodeByMonthByYear(region, month, year, db)
+                    getCountDifferentEventsByCountryCodeByMonthByYear(list_countries, month, year, db)
+                    getCountDifferentEventsByCountryCodeByStartByEnd(region, start_date, end_date, db)
+                    getAllHumanitarianEventsByRegionByYear(region, year, db)
+                    getAllHumanitarianEventsByRegionByMonthByYear(region, month, year, db)
+                    getDifferentEventsByRegionByYear(region, year, db)
+                    getDifferentEventsByRegionByMonthByYear(region, year, db)
+                    getLinksByRegionByStartByEnd(region, start_date, end_date, db)
+                    getCountAllByStartByEnd(start_date, end_date, db)
+                    getEventsByBrushByStartByEnd(brush, start_date, end_date, db)
 					</code></pre>
             </section>
 
@@ -213,6 +238,7 @@
 
                     <input id="start" type="date" value="2017-12-01">
                     <input id="end" type="date" value="2017-12-31">
+                    <button id="mode">Switch to brush</button>
                 </div>
                 <div id="graph"></div>
             </section>
@@ -220,10 +246,18 @@
 
         <section>
             <h2>Améliorations possibles</h2>
+            <ul>
+                <li>Classement des événements par ordre d'importance (à l'aide des mentions)</li>
+            </ul>
         </section>
 
         <section>
             <h2>Conclusion</h2>
+            <ul>
+                <li>Prise en main de AWS</li>
+                <li>Application d'une technologie NoSQL vue en cours</li>
+                <li>Analyse d'événements actuels</li>
+            </ul>
         </section>
 
         <section>
